@@ -1,5 +1,5 @@
-# Location Tracker
+# Texas Tech Football
 
-iPhone app that tracks your GPS location and generates shareable trip reports.
+iPhone app for tracking Texas Tech Red Raiders football — schedule, record, rankings, news, and game alerts.
 
-See [LocationTracker/README.md](LocationTracker/README.md) for setup and usage instructions.
+See [TexasTechFootball/README.md](TexasTechFootball/README.md) for setup and usage.
