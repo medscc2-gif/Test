@@ -1,0 +1,90 @@
+# Codemagic CI/CD for Texas Tech Football
+# Docs: https://docs.codemagic.io/yaml-basic-configuration/yaml-getting-started/
+#
+# Setup (one time):
+# 1. Sign up at codemagic.io with your GitHub account
+# 2. Connect this repo (medscc2-gif/Test)
+# 3. In Codemagic → Integrations: connect Apple Developer Portal + App Store Connect API key
+# 4. Create app in App Store Connect with your Bundle ID
+# 5. Start a build — Codemagic handles code signing automatically
+#
+# Full walkthrough: NO_MAC_SETUP.md
+
+workflows:
+  texas-tech-football-ios:
+    name: Texas Tech Football iOS
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: codemagic
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        # Replace with YOUR bundle ID from App Store Connect:
+        bundle_identifier: com.example.TexasTechFootball
+      vars:
+        XCODE_PROJECT: TexasTechFootball/TexasTechFootball.xcodeproj
+        XCODE_SCHEME: TexasTechFootball
+        APP_ID: com.example.TexasTechFootball
+      xcode: latest
+      cocoapods: default
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+        - pattern: 'cursor/**'
+          include: true
+
+    scripts:
+      - name: Build iOS app
+        working_directory: TexasTechFootball
+        script: |
+          xcodebuild build \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            | xcpretty
+
+      - name: Build ipa for App Store
+        working_directory: TexasTechFootball
+        script: |
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -archivePath build/TexasTechFootball.xcarchive \
+            archive \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/TexasTechFootball.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist /Users/builder/export_options.plist
+
+    artifacts:
+      - TexasTechFootball/build/ios/ipa/*.ipa
+      - TexasTechFootball/build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - user@example.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Internal Testers
