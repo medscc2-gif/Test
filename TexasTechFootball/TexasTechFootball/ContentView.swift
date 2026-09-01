@@ -20,6 +20,11 @@ struct ContentView: View {
                     Label("News", systemImage: "newspaper.fill")
                 }
 
+            RivalryView()
+                .tabItem {
+                    Label("Rivalries", systemImage: "flag.2.crossed.fill")
+                }
+
             SettingsView()
                 .tabItem {
                     Label("Alerts", systemImage: "bell.fill")

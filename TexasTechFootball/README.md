@@ -1,16 +1,21 @@
 # Texas Tech Football
 
-An iPhone app for Texas Tech Red Raiders football fans. Track the full season schedule, win/loss record, national rankings, CFP standings, and get alerts for games and news.
+An iPhone app for Texas Tech Red Raiders football fans. Track the full season schedule, win/loss record, national rankings, CFP standings, rivalry history, and get alerts for games and news.
+
+**Don't have a Mac?** See [INSTALL_ON_IPHONE.md](INSTALL_ON_IPHONE.md) for how to get the app on your iPhone without Xcode.
 
 ## Features
 
 - **Home dashboard** — Team logo, season record, AP/Coaches/CFP rankings, and next game
 - **Full schedule** — Every game with opponent, date, venue, TV broadcast, and final scores
+- **Rivalry tracker** — Series records vs Texas, TCU, Baylor, Oklahoma State, and Texas A&M
 - **News feed** — Latest Texas Tech football headlines from ESPN
+- **Live score widget** — Home screen widget showing live scores and next game
 - **Alerts**
   - Game reminders (24 hours and 1 hour before kickoff)
   - Final score notifications when games end
   - Breaking news notifications for new articles
+  - Server push notifications for live scores and rivalry games
 - **Background refresh** — Keeps data and alerts up to date
 
 ## Data Source
@@ -41,7 +46,8 @@ Live data is pulled from ESPN's public college football API (no API key required
 | Home | Record, rankings, next game |
 | Schedule | Full season schedule with results |
 | News | Latest headlines (tap to open in browser) |
-| Alerts | Configure game and news notifications |
+| Rivalries | Head-to-head records vs key rivals |
+| Alerts | Configure local and server push notifications |
 
 ## Project Structure
 
@@ -50,9 +56,11 @@ TexasTechFootball/
 ├── TexasTechFootball.xcodeproj
 └── TexasTechFootball/
     ├── Models/           # Game, TeamRecord, NewsArticle
-    ├── Services/         # ESPN API, notifications, background refresh
+    ├── Services/         # ESPN API, notifications, push, background refresh
     ├── ViewModels/       # AppViewModel
-    └── Views/            # Dashboard, Schedule, News, Settings
+    └── Views/            # Dashboard, Schedule, News, Rivalries, Settings
+├── TexasTechWidget/      # Live score home screen widget
+└── server/               # Push notification server (Node.js)
 ```
 
 ## Notes

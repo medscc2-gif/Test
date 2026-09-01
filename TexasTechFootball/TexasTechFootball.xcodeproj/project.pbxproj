@@ -21,10 +21,45 @@
 		B1000001000000000000000C /* NewsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000000C /* NewsView.swift */; };
 		B1000001000000000000000D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000000D /* SettingsView.swift */; };
 		B1000001000000000000000E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000000E /* Assets.xcassets */; };
+		B1000001000000000000000F /* Rivalry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000020000000000000010 /* Rivalry.swift */; };
+		B10000010000000000000010 /* RivalryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000020000000000000011 /* RivalryView.swift */; };
+		B10000010000000000000011 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000020000000000000012 /* WidgetSnapshot.swift */; };
+		B10000010000000000000012 /* PushNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000020000000000000013 /* PushNotificationManager.swift */; };
+		B10000010000000000000013 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000020000000000000014 /* AppDelegate.swift */; };
+		B10000010000000000000014 /* WidgetDataBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000020000000000000015 /* WidgetDataBuilder.swift */; };
+		B10000010000000000000015 /* TexasTechWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B10000030000000000000002 /* TexasTechWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B10000010000000000000016 /* TexasTechWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000020000000000000016 /* TexasTechWidgetBundle.swift */; };
+		B10000010000000000000017 /* TexasTechLiveScoreWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000020000000000000017 /* TexasTechLiveScoreWidget.swift */; };
+		B10000010000000000000018 /* WidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000020000000000000018 /* WidgetShared.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B100000C0000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B100000A0000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B10000060000000000000002;
+			remoteInfo = TexasTechWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B100000D0000000000000001 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B10000010000000000000015 /* TexasTechWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		B10000030000000000000001 /* TexasTechFootball.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TexasTechFootball.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B10000030000000000000002 /* TexasTechWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TexasTechWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000020000000000000001 /* TexasTechFootballApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TexasTechFootballApp.swift; sourceTree = "<group>"; };
 		B10000020000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		B10000020000000000000003 /* Game.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Game.swift; sourceTree = "<group>"; };
@@ -40,10 +75,29 @@
 		B1000002000000000000000D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B1000002000000000000000E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B1000002000000000000000F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B10000020000000000000010 /* Rivalry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rivalry.swift; sourceTree = "<group>"; };
+		B10000020000000000000011 /* RivalryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RivalryView.swift; sourceTree = "<group>"; };
+		B10000020000000000000012 /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
+		B10000020000000000000013 /* PushNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationManager.swift; sourceTree = "<group>"; };
+		B10000020000000000000014 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		B10000020000000000000015 /* WidgetDataBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataBuilder.swift; sourceTree = "<group>"; };
+		B10000020000000000000016 /* TexasTechWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TexasTechWidgetBundle.swift; sourceTree = "<group>"; };
+		B10000020000000000000017 /* TexasTechLiveScoreWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TexasTechLiveScoreWidget.swift; sourceTree = "<group>"; };
+		B10000020000000000000018 /* WidgetShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetShared.swift; sourceTree = "<group>"; };
+		B10000020000000000000019 /* TexasTechFootball.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TexasTechFootball.entitlements; sourceTree = "<group>"; };
+		B1000002000000000000001A /* TexasTechWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TexasTechWidget.entitlements; sourceTree = "<group>"; };
+		B1000002000000000000001B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		B10000040000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B10000040000000000000002 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -57,6 +111,7 @@
 			isa = PBXGroup;
 			children = (
 				B10000050000000000000002 /* TexasTechFootball */,
+				B10000050000000000000008 /* TexasTechWidget */,
 				B10000050000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -70,8 +125,10 @@
 				B10000050000000000000005 /* Services */,
 				B10000050000000000000006 /* ViewModels */,
 				B10000050000000000000007 /* Views */,
+				B10000050000000000000009 /* Shared */,
 				B1000002000000000000000E /* Assets.xcassets */,
 				B1000002000000000000000F /* Info.plist */,
+				B10000020000000000000019 /* TexasTechFootball.entitlements */,
 			);
 			path = TexasTechFootball;
 			sourceTree = "<group>";
@@ -80,6 +137,7 @@
 			isa = PBXGroup;
 			children = (
 				B10000030000000000000001 /* TexasTechFootball.app */,
+				B10000030000000000000002 /* TexasTechWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -90,6 +148,7 @@
 				B10000020000000000000003 /* Game.swift */,
 				B10000020000000000000004 /* TeamRecord.swift */,
 				B10000020000000000000005 /* NewsArticle.swift */,
+				B10000020000000000000010 /* Rivalry.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -100,6 +159,9 @@
 				B10000020000000000000006 /* ESPNAPIService.swift */,
 				B10000020000000000000007 /* NotificationService.swift */,
 				B10000020000000000000008 /* BackgroundRefreshService.swift */,
+				B10000020000000000000013 /* PushNotificationManager.swift */,
+				B10000020000000000000014 /* AppDelegate.swift */,
+				B10000020000000000000015 /* WidgetDataBuilder.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -118,9 +180,30 @@
 				B1000002000000000000000A /* DashboardView.swift */,
 				B1000002000000000000000B /* ScheduleView.swift */,
 				B1000002000000000000000C /* NewsView.swift */,
+				B10000020000000000000011 /* RivalryView.swift */,
 				B1000002000000000000000D /* SettingsView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		B10000050000000000000008 /* TexasTechWidget */ = {
+			isa = PBXGroup;
+			children = (
+				B10000020000000000000016 /* TexasTechWidgetBundle.swift */,
+				B10000020000000000000017 /* TexasTechLiveScoreWidget.swift */,
+				B10000020000000000000018 /* WidgetShared.swift */,
+				B1000002000000000000001B /* Info.plist */,
+				B1000002000000000000001A /* TexasTechWidget.entitlements */,
+			);
+			path = TexasTechWidget;
+			sourceTree = "<group>";
+		};
+		B10000050000000000000009 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				B10000020000000000000012 /* WidgetSnapshot.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -133,15 +216,34 @@
 				B10000070000000000000001 /* Sources */,
 				B10000040000000000000001 /* Frameworks */,
 				B10000080000000000000001 /* Resources */,
+				B100000D0000000000000001 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B100000E0000000000000001 /* PBXTargetDependency */,
 			);
 			name = TexasTechFootball;
 			productName = TexasTechFootball;
 			productReference = B10000030000000000000001 /* TexasTechFootball.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B10000060000000000000002 /* TexasTechWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B10000090000000000000004 /* Build configuration list for PBXNativeTarget "TexasTechWidget" */;
+			buildPhases = (
+				B10000070000000000000002 /* Sources */,
+				B10000040000000000000002 /* Frameworks */,
+				B10000080000000000000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TexasTechWidget;
+			productName = TexasTechWidget;
+			productReference = B10000030000000000000002 /* TexasTechWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -154,6 +256,9 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					B10000060000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					B10000060000000000000002 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
@@ -172,6 +277,7 @@
 			projectRoot = "";
 			targets = (
 				B10000060000000000000001 /* TexasTechFootball */,
+				B10000060000000000000002 /* TexasTechWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -182,6 +288,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				B1000001000000000000000E /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B10000080000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -205,10 +318,34 @@
 				B1000001000000000000000B /* ScheduleView.swift in Sources */,
 				B1000001000000000000000C /* NewsView.swift in Sources */,
 				B1000001000000000000000D /* SettingsView.swift in Sources */,
+				B1000001000000000000000F /* Rivalry.swift in Sources */,
+				B10000010000000000000010 /* RivalryView.swift in Sources */,
+				B10000010000000000000011 /* WidgetSnapshot.swift in Sources */,
+				B10000010000000000000012 /* PushNotificationManager.swift in Sources */,
+				B10000010000000000000013 /* AppDelegate.swift in Sources */,
+				B10000010000000000000014 /* WidgetDataBuilder.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B10000070000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000010000000000000016 /* TexasTechWidgetBundle.swift in Sources */,
+				B10000010000000000000017 /* TexasTechLiveScoreWidget.swift in Sources */,
+				B10000010000000000000018 /* WidgetShared.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B100000E0000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B10000060000000000000002 /* TexasTechWidget */;
+			targetProxy = B100000C0000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		B100000B0000000000000001 /* Debug */ = {
@@ -260,6 +397,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TexasTechFootball/TexasTechFootball.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -287,6 +425,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TexasTechFootball/TexasTechFootball.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -303,6 +442,54 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.TexasTechFootball;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		B100000B0000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TexasTechWidget/TexasTechWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TexasTechWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.TexasTechFootball.TexasTechWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B100000B0000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TexasTechWidget/TexasTechWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TexasTechWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.TexasTechFootball.TexasTechWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -326,6 +513,15 @@
 			buildConfigurations = (
 				B100000B0000000000000003 /* Debug */,
 				B100000B0000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B10000090000000000000004 /* Build configuration list for PBXNativeTarget "TexasTechWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B100000B0000000000000005 /* Debug */,
+				B100000B0000000000000006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,0 +1,15 @@
+{
+  "name": "texastech-push-server",
+  "version": "1.0.0",
+  "description": "Push notification server for Texas Tech Football app",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

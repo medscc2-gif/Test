@@ -3,9 +3,12 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var notifications: NotificationService
     @EnvironmentObject private var viewModel: AppViewModel
+    @EnvironmentObject private var pushManager: PushNotificationManager
 
     @State private var gameAlerts: Bool = true
     @State private var newsAlerts: Bool = true
+    @State private var pushAlerts: Bool = true
+    @State private var serverURL: String = ""
     @State private var reminder24h: Bool = true
     @State private var reminder1h: Bool = true
 
@@ -25,6 +28,7 @@ struct SettingsView: View {
                             Task {
                                 await notifications.requestAuthorization()
                                 if notifications.isAuthorized {
+                                    pushManager.registerForRemoteNotifications()
                                     await viewModel.refresh()
                                 }
                             }
@@ -53,6 +57,38 @@ struct SettingsView: View {
                     Text("Final score alerts are sent automatically when a game ends and the app refreshes.")
                 }
 
+                Section("Push Alerts (Server)") {
+                    Toggle("Server push notifications", isOn: $pushAlerts)
+                        .onChange(of: pushAlerts) { _, value in
+                            pushManager.pushEnabled = value
+                            if value, notifications.isAuthorized {
+                                pushManager.registerForRemoteNotifications()
+                            }
+                        }
+
+                    TextField("Push server URL", text: $serverURL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .keyboardType(.URL)
+
+                    Button("Save Server URL") {
+                        pushManager.serverURL = serverURL
+                        pushManager.registerForRemoteNotifications()
+                    }
+
+                    if pushManager.isRegistered {
+                        Label("Device registered with server", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.caption)
+                    } else if let error = pushManager.lastRegistrationError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                } footer: {
+                    Text("Server push delivers live score, news, and rivalry game alerts even when the app is closed. Deploy the included server/ folder and paste your server URL here.")
+                }
+
                 Section("News Alerts") {
                     Toggle("Breaking news notifications", isOn: $newsAlerts)
                         .onChange(of: newsAlerts) { _, value in
@@ -77,6 +113,8 @@ struct SettingsView: View {
             .onAppear {
                 gameAlerts = notifications.gameAlertsEnabled
                 newsAlerts = notifications.newsAlertsEnabled
+                pushAlerts = pushManager.pushEnabled
+                serverURL = pushManager.serverURL
                 reminder24h = notifications.gameReminderHours.contains(24)
                 reminder1h = notifications.gameReminderHours.contains(1)
             }
@@ -96,4 +134,5 @@ struct SettingsView: View {
     SettingsView()
         .environmentObject(NotificationService.shared)
         .environmentObject(AppViewModel())
+        .environmentObject(PushNotificationManager.shared)
 }
