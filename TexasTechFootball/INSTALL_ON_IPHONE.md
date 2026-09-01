@@ -2,7 +2,17 @@
 
 **You never need Xcode on your iPhone.** Xcode is a Mac app used to *build* iOS apps. Your phone only needs to *install* the finished app.
 
-Here are your options, from easiest to most involved.
+---
+
+## Have a Developer account but no Mac?
+
+**→ Follow the dedicated guide: [NO_MAC_SETUP.md](NO_MAC_SETUP.md)**
+
+That walkthrough uses [Codemagic](https://codemagic.io) (free tier) to build the app in the cloud and deliver it to your iPhone via **TestFlight**. No Mac required.
+
+---
+
+Here are all options, from easiest to most involved.
 
 ---
 

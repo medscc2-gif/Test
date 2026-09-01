@@ -2,7 +2,7 @@
 
 An iPhone app for Texas Tech Red Raiders football fans. Track the full season schedule, win/loss record, national rankings, CFP standings, rivalry history, and get alerts for games and news.
 
-**Don't have a Mac?** See [INSTALL_ON_IPHONE.md](INSTALL_ON_IPHONE.md) for how to get the app on your iPhone without Xcode.
+**Don't have a Mac?** See [NO_MAC_SETUP.md](NO_MAC_SETUP.md) if you have an Apple Developer account, or [INSTALL_ON_IPHONE.md](INSTALL_ON_IPHONE.md) for all options.
 
 ## Features
 
