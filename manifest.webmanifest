@@ -1,0 +1,27 @@
+{
+  "name": "BeatLink — Nearest Officer",
+  "short_name": "BeatLink",
+  "description": "Locate the nearest police officer and view unit positions on a map.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b1f2a",
+  "theme_color": "#0b1f2a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
