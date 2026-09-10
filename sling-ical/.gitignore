@@ -1,0 +1,8 @@
+# Local env / generated calendars
+.env
+*.ics
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
