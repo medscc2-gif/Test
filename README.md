@@ -42,3 +42,7 @@ icons/                  App icons
 
 - Geolocation requires a secure context (HTTPS or localhost).
 - Emergency calls still go through the built-in **Call 911** link — BeatLink does not contact dispatch automatically.
+
+## Sling → iCal
+
+Need your [Sling](https://getsling.com) work schedule in Apple/Google Calendar? See [`sling-ical/`](sling-ical/) — a small Python tool that pulls shifts from the Sling API and writes a subscribeable `.ics` feed.

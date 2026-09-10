@@ -1,0 +1,20 @@
+{
+  "events": [
+    {
+      "id": 42,
+      "summary": "Opening Shift",
+      "dtstart": "2026-09-11T08:00:00",
+      "dtend": "2026-09-11T16:00:00",
+      "location": {"name": "Downtown"},
+      "position": {"name": "Cashier"},
+      "notes": "Bring keys"
+    },
+    {
+      "id": 43,
+      "summary": "Closing",
+      "dtstart": "2026-09-12T16:00:00Z",
+      "dtend": "2026-09-12T23:00:00Z",
+      "location": {"name": "Downtown", "address": "100 Main St"}
+    }
+  ]
+}
