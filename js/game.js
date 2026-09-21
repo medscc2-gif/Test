@@ -104,10 +104,10 @@
 
   function beginWave(n) {
     state.wave = n;
-    state.waveQuota = 6 + n * 3;
+    state.waveQuota = 5 + n * 2;
     state.aliensLeftInWave = state.waveQuota;
     state.aliensSpawned = 0;
-    state.spawnTimer = 0.6;
+    state.spawnTimer = 1.1;
     state.waveClearTimer = 0;
     waveEl.textContent = String(n);
   }
@@ -178,20 +178,25 @@
   }
 
   function spawnAlien() {
-    const tier = Math.min(3, 1 + Math.floor((state.wave - 1) / 2) + (Math.random() < 0.25 ? 1 : 0));
+    // Wave 1 is mostly scouts; tougher kinds unlock gradually.
+    const roll = Math.random();
+    let kindIndex = 0;
+    if (state.wave >= 2 && roll > 0.55) kindIndex = 1;
+    if (state.wave >= 3 && roll > 0.78) kindIndex = 2;
+    if (state.wave >= 4 && roll > 0.9) kindIndex = 3;
     const kinds = [
-      { kind: "scout", r: 16, hp: 1, speed: 55 + state.wave * 6, score: 100, color: "#7dff9a" },
-      { kind: "brute", r: 24, hp: 3, speed: 35 + state.wave * 4, score: 250, color: "#c8ff4d" },
-      { kind: "razor", r: 14, hp: 2, speed: 90 + state.wave * 8, score: 180, color: "#ff5e4d" },
-      { kind: "orb", r: 20, hp: 2, speed: 45 + state.wave * 5, score: 200, color: "#5ee7ff" },
+      { kind: "scout", r: 16, hp: 1, speed: 38 + state.wave * 4, score: 100, color: "#7dff9a" },
+      { kind: "brute", r: 24, hp: 3, speed: 26 + state.wave * 3, score: 250, color: "#c8ff4d" },
+      { kind: "razor", r: 14, hp: 2, speed: 58 + state.wave * 5, score: 180, color: "#ff5e4d" },
+      { kind: "orb", r: 20, hp: 2, speed: 32 + state.wave * 3.5, score: 200, color: "#5ee7ff" },
     ];
-    const def = kinds[Math.min(tier, kinds.length - 1)];
+    const def = kinds[kindIndex];
     const x = rand(40, W - 40);
     state.aliens.push({
       ...def,
       x,
       y: -30,
-      vx: rand(-40, 40),
+      vx: rand(-30, 30),
       phase: Math.random() * Math.PI * 2,
       hitFlash: 0,
     });
@@ -201,7 +206,7 @@
   function fire() {
     const tank = state.tank;
     if (!tank || tank.cooldown > 0) return;
-    tank.cooldown = 0.22;
+    tank.cooldown = 0.16;
     tank.recoil = 1;
     const ang = tank.barrelAngle;
     const muzzle = 42;
@@ -293,7 +298,7 @@
       state.spawnTimer -= dt;
       if (state.spawnTimer <= 0) {
         spawnAlien();
-        const pace = Math.max(0.28, 1.05 - state.wave * 0.06);
+        const pace = Math.max(0.45, 1.35 - state.wave * 0.07);
         state.spawnTimer = pace;
       }
     }
