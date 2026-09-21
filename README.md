@@ -1,44 +1,41 @@
-# BeatLink
+# Iron Shell
 
-iOS-friendly web app that shows nearby police officer locations on a map and highlights the nearest unit to you.
+3D browser game: **drive a tank** through a ruined desert outpost and blast waves of invading aliens. Chase camera follows the hull so the terrain rolls past you.
 
-## Features
-
-- Full-screen interactive map (Leaflet + CARTO tiles)
-- Uses your device GPS to place you on the map
-- Plots demo patrol units around your location
-- Calculates and highlights the **nearest officer**
-- Unit roster with distances; tap a unit to fly to it on the map
-- Installable on iPhone via **Add to Home Screen** (PWA meta + manifest)
-
-> Officer positions are **demo data** generated around your location for a realistic prototype. They are not live CAD / dispatch feeds.
-
-## Open on iPhone
-
-1. Serve the folder over HTTPS (or use a local tunnel), or open via a static host.
-2. In Safari: open the site → Share → **Add to Home Screen**.
-3. Allow location when prompted, or choose **Use demo location**.
-
-### Quick local preview
+## Play
 
 ```bash
 python3 -m http.server 8080
 ```
 
-Then open `http://localhost:8080` on your machine, or use a LAN / tunnel URL on your iPhone.
+Open `http://localhost:8080` (needs a local server for ES modules).
 
-## Project layout
+## Controls
+
+| Input | Action |
+| --- | --- |
+| W / S or ↑ ↓ | Drive forward / reverse |
+| A / D or ← → | Steer |
+| Mouse | Aim turret |
+| Space or click / hold | Fire |
+| On-screen pads | Mobile drive + fire |
+| Enter | Start / continue / redeploy |
+
+## Features
+
+- Three.js chase-cam desert drive
+- Dune terrain, ruined buildings, water tower, dusk sky + fog
+- Procedural tank with independent turret aim
+- Billboard alien swarm (scout / brute / razor / orb)
+- Hull integrity, repair pickups, waves, local high score
+
+## Layout
 
 ```
-index.html              App shell
-css/styles.css          Mobile-first UI
-js/officers.js          Distance math + demo units
-js/app.js               Map, geolocation, nearest-unit UI
-manifest.webmanifest    Home Screen install metadata
-icons/                  App icons
+index.html                 UI shell + Three import map
+css/styles.css             HUD and stage
+js/game.js                 Three.js scene + gameplay
+assets/ground-sand.jpg     Terrain texture
+assets/alien-*.png         Alien billboard sprites
+icons/favicon.svg
 ```
-
-## Notes
-
-- Geolocation requires a secure context (HTTPS or localhost).
-- Emergency calls still go through the built-in **Call 911** link — BeatLink does not contact dispatch automatically.
