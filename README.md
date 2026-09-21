@@ -1,6 +1,6 @@
 # Iron Shell
 
-Browser game: drive a photorealistic tank across a ruined desert outpost and blast waves of invading aliens.
+3D browser game: **drive a tank** through a ruined desert outpost and blast waves of invading aliens. Chase camera follows the hull so the terrain rolls past you.
 
 ## Play
 
@@ -8,37 +8,34 @@ Browser game: drive a photorealistic tank across a ruined desert outpost and bla
 python3 -m http.server 8080
 ```
 
-Open `http://localhost:8080`.
+Open `http://localhost:8080` (needs a local server for ES modules).
 
 ## Controls
 
 | Input | Action |
 | --- | --- |
-| A / D or ← → | Move tank |
+| W / S or ↑ ↓ | Drive forward / reverse |
+| A / D or ← → | Steer |
+| Mouse | Aim turret |
 | Space or click / hold | Fire |
-| Mouse X | Aim turret |
-| On-screen pads | Mobile move + fire |
+| On-screen pads | Mobile drive + fire |
 | Enter | Start / continue / redeploy |
 
 ## Features
 
-- Photoreal desert backdrop with ruined buildings and distant skyline
-- Image-based tank and alien sprites with parallax sand / heat haze
-- Wave-based alien swarm with scouts, brutes, razors, and orbs
-- Hull integrity (3 hits), brief invulnerability after damage
-- Occasional repair pickups
-- Score + local high score
-- Screen shake, muzzle flash, and dusk atmosphere
+- Three.js chase-cam desert drive
+- Dune terrain, ruined buildings, water tower, dusk sky + fog
+- Procedural tank with independent turret aim
+- Billboard alien swarm (scout / brute / razor / orb)
+- Hull integrity, repair pickups, waves, local high score
 
 ## Layout
 
 ```
-index.html                 UI shell + overlay
+index.html                 UI shell + Three import map
 css/styles.css             HUD and stage
-js/game.js                 Canvas engine + gameplay
-assets/bg-desert-city.jpg  Photoreal desert + ruined buildings
-assets/ground-sand.jpg     Foreground sand strip
-assets/tank.png            Player tank sprite
-assets/alien-*.png         Alien sprites
+js/game.js                 Three.js scene + gameplay
+assets/ground-sand.jpg     Terrain texture
+assets/alien-*.png         Alien billboard sprites
 icons/favicon.svg
 ```
