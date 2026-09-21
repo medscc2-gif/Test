@@ -1,12 +1,11 @@
 {
-  "name": "BeatLink — Nearest Officer",
-  "short_name": "BeatLink",
-  "description": "Locate the nearest police officer and view unit positions on a map.",
-  "start_url": "./index.html",
+  "name": "Iron Shell",
+  "short_name": "Iron Shell",
+  "description": "Drive a tank and blast waves of invading aliens.",
+  "start_url": "./",
   "display": "standalone",
-  "background_color": "#0b1f2a",
-  "theme_color": "#0b1f2a",
-  "orientation": "portrait-primary",
+  "background_color": "#0c1410",
+  "theme_color": "#0c1410",
   "icons": [
     {
       "src": "icons/icon-192.png",
@@ -16,11 +15,6 @@
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/apple-touch-icon.png",
-      "sizes": "180x180",
       "type": "image/png"
     }
   ]
