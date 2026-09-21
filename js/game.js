@@ -638,15 +638,14 @@
     if (img) {
       ctx.rotate(a.kind === "razor" ? a.rot : Math.sin(a.phase) * 0.08);
       const s = a.draw;
-      ctx.drawImage(img, -s / 2, -s / 2, s, s);
-      // Subtle biolum rim for desert contrast
-      ctx.globalCompositeOperation = "screen";
-      ctx.globalAlpha = 0.18;
-      ctx.fillStyle = a.color;
-      ctx.beginPath();
-      ctx.arc(0, 0, s * 0.42, 0, Math.PI * 2);
-      ctx.fill();
+      // Soft drop shadow under sprite
+      ctx.drawImage(img, -s / 2 + 3, -s / 2 + 5, s, s);
+      ctx.globalAlpha = 0.35;
+      ctx.globalCompositeOperation = "multiply";
+      ctx.drawImage(img, -s / 2 + 3, -s / 2 + 5, s, s);
       ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = a.hitFlash > 0 ? 0.55 : 1;
+      ctx.drawImage(img, -s / 2, -s / 2, s, s);
     } else {
       ctx.fillStyle = a.color;
       ctx.beginPath();

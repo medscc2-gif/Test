@@ -22,11 +22,13 @@ Open `http://localhost:8080`.
 
 ## Features
 
+- Photoreal desert backdrop with ruined buildings and distant skyline
+- Image-based tank and alien sprites with parallax sand / heat haze
 - Wave-based alien swarm with scouts, brutes, razors, and orbs
 - Hull integrity (3 hits), brief invulnerability after damage
 - Occasional repair pickups
 - Score + local high score
-- Screen shake, muzzle flash, and breach-sky atmosphere
+- Screen shake, muzzle flash, and dusk atmosphere
 
 ## Layout
 
