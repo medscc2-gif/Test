@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#140e0a" />
     <meta
       name="description"
-      content="Iron Shell — photoreal desert tank defense against invading aliens."
+      content="Iron Shell — drive a 3D tank through a desert outpost and blast invading aliens."
     />
     <link rel="icon" type="image/svg+xml" href="icons/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,14 +19,22 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="css/styles.css" />
-    <title>Iron Shell — Tank vs Aliens</title>
+    <title>Iron Shell — 3D Tank Drive</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+      }
+    </script>
   </head>
   <body>
     <div class="shell">
       <header class="hud" aria-label="Game status">
         <div class="brand">
           <p class="brand-name">Iron Shell</p>
-          <p class="brand-tag">Desert outpost defense</p>
+          <p class="brand-tag">3D desert drive</p>
         </div>
         <div class="meters" aria-live="polite">
           <div class="meter">
@@ -47,18 +55,18 @@
       </header>
 
       <main class="stage-wrap">
-        <canvas id="game" width="960" height="640" aria-label="Iron Shell game canvas"></canvas>
+        <canvas id="game" aria-label="Iron Shell 3D game canvas"></canvas>
 
         <div class="overlay" id="overlay" data-screen="title">
           <div class="panel">
             <p class="panel-kicker" id="panelKicker">Desert breach</p>
             <h1 class="panel-title" id="panelTitle">Iron Shell</h1>
             <p class="panel-copy" id="panelCopy">
-              Hold the ruined outpost. Roll the hull across the sand and blast the swarm before it reaches the trench.
+              Drive the hull through the ruined outpost. Steer into the swarm and blast aliens before they reach you.
             </p>
             <button type="button" class="cta" id="primaryBtn">Deploy tank</button>
             <p class="panel-hint" id="panelHint">
-              A / D or ← → move · Space or click fire · touch pads on mobile
+              W/S drive · A/D steer · mouse aim · click or Space fire
             </p>
           </div>
         </div>
@@ -66,13 +74,15 @@
 
       <div class="touch-pad" id="touchPad" aria-hidden="true">
         <div class="touch-cluster left">
-          <button type="button" class="pad-btn" data-dir="left" aria-label="Move left">◀</button>
-          <button type="button" class="pad-btn" data-dir="right" aria-label="Move right">▶</button>
+          <button type="button" class="pad-btn" data-key="arrowleft" aria-label="Steer left">◀</button>
+          <button type="button" class="pad-btn" data-key="arrowup" aria-label="Drive forward">▲</button>
+          <button type="button" class="pad-btn" data-key="arrowdown" aria-label="Drive reverse">▼</button>
+          <button type="button" class="pad-btn" data-key="arrowright" aria-label="Steer right">▶</button>
         </div>
         <button type="button" class="pad-btn fire" id="fireBtn" aria-label="Fire">Fire</button>
       </div>
     </div>
 
-    <script src="js/game.js"></script>
+    <script type="module" src="js/game.js"></script>
   </body>
 </html>

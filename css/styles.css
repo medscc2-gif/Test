@@ -156,9 +156,10 @@ body {
   display: block;
   width: 100%;
   height: 100%;
+  min-height: 420px;
   max-height: calc(100dvh - 140px);
   cursor: crosshair;
-  image-rendering: auto;
+  touch-action: none;
 }
 
 .overlay {
@@ -254,27 +255,30 @@ body {
 }
 
 .touch-cluster {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, 56px);
+  grid-template-rows: repeat(2, 48px);
+  gap: 8px;
 }
 
 .pad-btn {
   appearance: none;
   border: 1px solid rgba(196, 165, 116, 0.35);
-  background: rgba(26, 46, 34, 0.85);
+  background: rgba(42, 28, 20, 0.9);
   color: var(--sand);
   font-family: var(--font-mono);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  width: 64px;
-  height: 56px;
+  width: 56px;
+  height: 48px;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .pad-btn.fire {
   width: 96px;
-  background: linear-gradient(180deg, rgba(232, 90, 60, 0.35), rgba(26, 46, 34, 0.9));
+  height: 104px;
+  background: linear-gradient(180deg, rgba(232, 90, 60, 0.35), rgba(42, 28, 20, 0.9));
   border-color: rgba(232, 90, 60, 0.55);
   color: #ffc9b8;
   letter-spacing: 0.12em;
@@ -284,7 +288,7 @@ body {
 
 .pad-btn:active,
 .pad-btn.active {
-  background: rgba(61, 92, 69, 0.95);
+  background: rgba(106, 78, 50, 0.95);
   transform: scale(0.96);
 }
 

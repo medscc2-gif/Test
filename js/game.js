@@ -1,892 +1,926 @@
-(() => {
-  "use strict";
+import * as THREE from "three";
 
-  const canvas = document.getElementById("game");
-  const ctx = canvas.getContext("2d");
-  const overlay = document.getElementById("overlay");
-  const panelKicker = document.getElementById("panelKicker");
-  const panelTitle = document.getElementById("panelTitle");
-  const panelCopy = document.getElementById("panelCopy");
-  const panelHint = document.getElementById("panelHint");
-  const primaryBtn = document.getElementById("primaryBtn");
-  const scoreEl = document.getElementById("scoreValue");
-  const waveEl = document.getElementById("waveValue");
-  const hullEl = document.getElementById("hullValue");
+const canvas = document.getElementById("game");
+const overlay = document.getElementById("overlay");
+const panelKicker = document.getElementById("panelKicker");
+const panelTitle = document.getElementById("panelTitle");
+const panelCopy = document.getElementById("panelCopy");
+const panelHint = document.getElementById("panelHint");
+const primaryBtn = document.getElementById("primaryBtn");
+const scoreEl = document.getElementById("scoreValue");
+const waveEl = document.getElementById("waveValue");
+const hullEl = document.getElementById("hullValue");
 
-  const W = 960;
-  const H = 640;
-  const MAX_HULL = 3;
-  const STORAGE_KEY = "iron-shell-hi";
-  const GROUND_Y = H - 56;
+const MAX_HULL = 3;
+const STORAGE_KEY = "iron-shell-3d-hi";
+const WORLD = 220;
 
-  const ASSET_URLS = {
-    bg: "assets/bg-desert-city.jpg",
-    ground: "assets/ground-sand.jpg",
-    tank: "assets/tank.png",
-    scout: "assets/alien-scout.png",
-    brute: "assets/alien-brute.png",
-    razor: "assets/alien-razor.png",
-    orb: "assets/alien-orb.png",
-  };
+const state = {
+  mode: "title",
+  score: 0,
+  hi: Number(localStorage.getItem(STORAGE_KEY) || 0),
+  wave: 1,
+  hull: MAX_HULL,
+  invuln: 0,
+  spawnTimer: 0,
+  waveClearTimer: 0,
+  aliensLeft: 0,
+  aliensSpawned: 0,
+  waveQuota: 0,
+  keys: Object.create(null),
+  pointerDown: false,
+  pointerNdc: new THREE.Vector2(0, 0.2),
+  ready: false,
+};
 
-  const images = {};
-  let assetsReady = false;
+const clock = new THREE.Clock();
+const bullets = [];
+const aliens = [];
+const pickups = [];
+const buildings = [];
+const tmpV = new THREE.Vector3();
+const tmpV2 = new THREE.Vector3();
+const _q = new THREE.Quaternion();
+const aimPoint = new THREE.Vector3();
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const raycaster = new THREE.Raycaster();
 
-  const state = {
-    mode: "title",
-    score: 0,
-    hi: Number(localStorage.getItem(STORAGE_KEY) || 0),
-    wave: 1,
-    hull: MAX_HULL,
-    invuln: 0,
-    shake: 0,
-    flash: 0,
-    spawnTimer: 0,
-    waveClearTimer: 0,
-    aliensLeftInWave: 0,
-    aliensSpawned: 0,
-    waveQuota: 0,
-    keys: Object.create(null),
-    pointerDown: false,
-    aimX: W / 2,
-    aimY: H * 0.35,
-    t: 0,
-    heat: [],
-    dust: [],
-    tank: null,
-    bullets: [],
-    aliens: [],
-    particles: [],
-    blasts: [],
-    pickups: [],
-  };
+let renderer, scene, camera, sun, hemi;
+let sandTex, scoutTex, bruteTex, razorTex, orbTex;
+let tank, hullMesh, turretPivot, barrelMesh, muzzle;
+let camTarget = new THREE.Vector3();
+let camPos = new THREE.Vector3(0, 8, 14);
 
-  function rand(a, b) {
-    return a + Math.random() * (b - a);
-  }
+function rand(a, b) {
+  return a + Math.random() * (b - a);
+}
 
-  function clamp(v, a, b) {
-    return Math.max(a, Math.min(b, v));
-  }
+function clamp(v, a, b) {
+  return Math.max(a, Math.min(b, v));
+}
 
-  function loadImage(src) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
-    });
-  }
-
-  async function loadAssets() {
-    const entries = Object.entries(ASSET_URLS);
-    await Promise.all(
-      entries.map(async ([key, url]) => {
-        images[key] = await loadImage(url);
-      })
+function loadTexture(url) {
+  return new Promise((resolve, reject) => {
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      url,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        resolve(tex);
+      },
+      undefined,
+      reject
     );
-    assetsReady = true;
+  });
+}
+
+function makeDuneTerrain(texture) {
+  const geo = new THREE.PlaneGeometry(WORLD * 1.4, WORLD * 1.4, 96, 96);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    const d =
+      Math.sin(x * 0.045) * Math.cos(z * 0.038) * 1.8 +
+      Math.sin(x * 0.11 + z * 0.07) * 0.7 +
+      Math.sin((x + z) * 0.02) * 2.4;
+    // Keep center relatively flat for driving start
+    const fall = clamp(Math.hypot(x, z) / 40, 0, 1);
+    pos.setY(i, d * fall * 0.85);
+  }
+  geo.computeVertexNormals();
+
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(28, 28);
+  texture.anisotropy = 8;
+
+  const mat = new THREE.MeshStandardMaterial({
+    map: texture,
+    roughness: 0.95,
+    metalness: 0.02,
+    color: 0xd2b48c,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+function makeBuilding(x, z, w, h, d) {
+  const group = new THREE.Group();
+  const concrete = new THREE.MeshStandardMaterial({
+    color: new THREE.Color().setHSL(0.08, 0.08, rand(0.28, 0.42)),
+    roughness: 0.92,
+    metalness: 0.05,
+  });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), concrete);
+  body.position.y = h / 2;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+
+  // Broken top edge chunks
+  const rubble = new THREE.Mesh(
+    new THREE.BoxGeometry(w * 0.45, h * 0.12, d * 0.35),
+    concrete
+  );
+  rubble.position.set(rand(-w * 0.2, w * 0.2), h + 0.2, rand(-d * 0.15, d * 0.15));
+  rubble.rotation.y = rand(-0.4, 0.4);
+  rubble.castShadow = true;
+  group.add(rubble);
+
+  // Window holes as darker insets
+  const voidMat = new THREE.MeshStandardMaterial({ color: 0x0a0806, roughness: 0.05 });
+  for (let i = 0; i < 3; i++) {
+    const win = new THREE.Mesh(new THREE.BoxGeometry(w * 0.18, h * 0.14, 0.2), voidMat);
+    win.position.set(-w * 0.25 + i * w * 0.25, h * (0.35 + (i % 2) * 0.25), d / 2 + 0.01);
+    group.add(win);
   }
 
-  function initAtmosphere() {
-    state.heat = Array.from({ length: 18 }, () => ({
-      x: Math.random() * W,
-      y: rand(H * 0.2, H * 0.55),
-      w: rand(40, 120),
-      h: rand(8, 22),
-      a: rand(0.03, 0.08),
-      sp: rand(0.15, 0.45),
-      ph: Math.random() * Math.PI * 2,
-    }));
-    state.dust = Array.from({ length: 40 }, () => ({
-      x: Math.random() * W,
-      y: rand(H * 0.55, H - 40),
-      r: rand(1, 3.5),
-      vx: rand(12, 55),
-      a: rand(0.15, 0.4),
-    }));
+  group.position.set(x, 0, z);
+  group.userData.radius = Math.max(w, d) * 0.65;
+  return group;
+}
+
+function makeWaterTower(x, z) {
+  const g = new THREE.Group();
+  const metal = new THREE.MeshStandardMaterial({
+    color: 0xb8b0a4,
+    roughness: 0.55,
+    metalness: 0.45,
+  });
+  const rust = new THREE.MeshStandardMaterial({
+    color: 0x8a6a48,
+    roughness: 0.8,
+    metalness: 0.2,
+  });
+  for (let i = 0; i < 4; i++) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 10, 6), metal);
+    const a = (i / 4) * Math.PI * 2 + 0.4;
+    leg.position.set(Math.cos(a) * 1.4, 5, Math.sin(a) * 1.4);
+    leg.castShadow = true;
+    g.add(leg);
+  }
+  const tank = new THREE.Mesh(new THREE.SphereGeometry(2.1, 16, 12), rust);
+  tank.position.y = 11;
+  tank.castShadow = true;
+  g.add(tank);
+  g.position.set(x, 0, z);
+  g.userData.radius = 3;
+  return g;
+}
+
+function makeTank() {
+  const root = new THREE.Group();
+  const olive = new THREE.MeshStandardMaterial({
+    color: 0x5a6844,
+    roughness: 0.78,
+    metalness: 0.18,
+  });
+  const dark = new THREE.MeshStandardMaterial({
+    color: 0x2e3424,
+    roughness: 0.85,
+    metalness: 0.1,
+  });
+  const brass = new THREE.MeshStandardMaterial({
+    color: 0xb8923a,
+    roughness: 0.45,
+    metalness: 0.55,
+  });
+
+  const tracksL = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, 3.2), dark);
+  tracksL.position.set(-1.15, 0.35, 0);
+  tracksL.castShadow = true;
+  root.add(tracksL);
+  const tracksR = tracksL.clone();
+  tracksR.position.x = 1.15;
+  root.add(tracksR);
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.7, 3.0), olive);
+  body.position.y = 0.75;
+  body.castShadow = true;
+  root.add(body);
+  hullMesh = body;
+
+  const nose = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.35, 0.8), olive);
+  nose.position.set(0, 0.7, -1.55);
+  nose.castShadow = true;
+  root.add(nose);
+
+  turretPivot = new THREE.Group();
+  turretPivot.position.set(0, 1.2, -0.1);
+  root.add(turretPivot);
+
+  const turret = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 0.55, 12), olive);
+  turret.castShadow = true;
+  turretPivot.add(turret);
+
+  const hatch = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 10), dark);
+  hatch.position.y = 0.32;
+  turretPivot.add(hatch);
+
+  barrelMesh = new THREE.Group();
+  turretPivot.add(barrelMesh);
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 2.6, 10), dark);
+  tube.rotation.x = Math.PI / 2;
+  tube.position.z = -1.5;
+  tube.castShadow = true;
+  barrelMesh.add(tube);
+  const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.28, 10), brass);
+  tip.rotation.x = Math.PI / 2;
+  tip.position.z = -2.75;
+  barrelMesh.add(tip);
+
+  muzzle = new THREE.Object3D();
+  muzzle.position.z = -2.95;
+  barrelMesh.add(muzzle);
+
+  root.position.set(0, 0, 0);
+  root.userData = {
+    yaw: 0,
+    speed: 0,
+    maxSpeed: 22,
+    accel: 28,
+    turnRate: 1.8,
+    cooldown: 0,
+    radius: 2.2,
+  };
+  return root;
+}
+
+function makeAlien(kind, tex) {
+  const group = new THREE.Group();
+  const mat = new THREE.SpriteMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+    alphaTest: 0.15,
+  });
+  const sprite = new THREE.Sprite(mat);
+  const scale =
+    kind === "brute" ? 4.2 : kind === "orb" ? 3.2 : kind === "razor" ? 2.6 : 3.0;
+  sprite.scale.set(scale, scale, 1);
+  sprite.position.y = scale * 0.45;
+  group.add(sprite);
+
+  // Soft ground blob
+  const shadow = new THREE.Mesh(
+    new THREE.CircleGeometry(scale * 0.28, 16),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28 })
+  );
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.05;
+  group.add(shadow);
+
+  return group;
+}
+
+function heightAt(x, z) {
+  // Approximate dune height used in terrain generation
+  const fall = clamp(Math.hypot(x, z) / 40, 0, 1);
+  const d =
+    Math.sin(x * 0.045) * Math.cos(z * 0.038) * 1.8 +
+    Math.sin(x * 0.11 + z * 0.07) * 0.7 +
+    Math.sin((x + z) * 0.02) * 2.4;
+  return d * fall * 0.85;
+}
+
+function placeOnGround(obj, x, z) {
+  obj.position.set(x, heightAt(x, z), z);
+}
+
+async function init() {
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    powerPreference: "high-performance",
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(canvas.clientWidth || 960, canvas.clientHeight || 640, false);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1018);
+  scene.fog = new THREE.FogExp2(0xc4783a, 0.012);
+
+  // Dusk gradient sky via large dome
+  const skyGeo = new THREE.SphereGeometry(260, 32, 16);
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    uniforms: {},
+    vertexShader: `
+      varying vec3 vPos;
+      void main() {
+        vPos = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vPos;
+      void main() {
+        float h = normalize(vPos).y;
+        vec3 top = vec3(0.08, 0.05, 0.14);
+        vec3 mid = vec3(0.75, 0.35, 0.22);
+        vec3 bot = vec3(0.95, 0.72, 0.42);
+        vec3 col = mix(bot, mid, smoothstep(-0.2, 0.15, h));
+        col = mix(col, top, smoothstep(0.15, 0.75, h));
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `,
+  });
+  scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+  camera = new THREE.PerspectiveCamera(55, 1.5, 0.1, 400);
+  camera.position.copy(camPos);
+
+  hemi = new THREE.HemisphereLight(0xffd2a8, 0x3a2a18, 0.85);
+  scene.add(hemi);
+  sun = new THREE.DirectionalLight(0xffb078, 1.35);
+  sun.position.set(-40, 35, 20);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.near = 5;
+  sun.shadow.camera.far = 120;
+  sun.shadow.camera.left = -50;
+  sun.shadow.camera.right = 50;
+  sun.shadow.camera.top = 50;
+  sun.shadow.camera.bottom = -50;
+  scene.add(sun);
+  scene.add(new THREE.AmbientLight(0x402818, 0.35));
+
+  const [sand, scout, brute, razor, orb] = await Promise.all([
+    loadTexture("assets/ground-sand.jpg"),
+    loadTexture("assets/alien-scout.png"),
+    loadTexture("assets/alien-brute.png"),
+    loadTexture("assets/alien-razor.png"),
+    loadTexture("assets/alien-orb.png"),
+  ]);
+  sandTex = sand;
+  scoutTex = scout;
+  bruteTex = brute;
+  razorTex = razor;
+  orbTex = orb;
+
+  scene.add(makeDuneTerrain(sandTex));
+
+  // Outpost buildings around the map (not on spawn)
+  const spots = [
+    [28, -22, 8, 10, 6],
+    [36, -8, 6, 14, 6],
+    [22, 18, 7, 9, 5],
+    [-30, 24, 9, 12, 7],
+    [-38, -16, 6, 8, 6],
+    [-18, -34, 10, 7, 8],
+    [8, -40, 5, 11, 5],
+    [42, 20, 7, 9, 7],
+    [-45, 5, 6, 13, 5],
+  ];
+  for (const [x, z, w, h, d] of spots) {
+    const b = makeBuilding(x, z, w, h, d);
+    placeOnGround(b, x, z);
+    // placeOnGround overwrites y; lift by ground already included — buildings sit on height
+    b.position.y = heightAt(x, z);
+    scene.add(b);
+    buildings.push(b);
+  }
+  const tower = makeWaterTower(18, -28);
+  tower.position.y = heightAt(18, -28);
+  scene.add(tower);
+  buildings.push(tower);
+
+  // Distant ruin silhouettes
+  for (let i = 0; i < 14; i++) {
+    const ang = (i / 14) * Math.PI * 2;
+    const dist = rand(85, 110);
+    const x = Math.cos(ang) * dist;
+    const z = Math.sin(ang) * dist;
+    const b = makeBuilding(x, z, rand(5, 12), rand(8, 20), rand(5, 10));
+    b.position.y = heightAt(x, z);
+    scene.add(b);
   }
 
-  function makeTank() {
-    return {
-      x: W / 2,
-      y: GROUND_Y - 8,
-      w: 92,
-      h: 70,
-      speed: 280,
-      cooldown: 0,
-      barrelAngle: -Math.PI / 2,
-      recoil: 0,
-      tread: 0,
-    };
+  tank = makeTank();
+  scene.add(tank);
+
+  window.addEventListener("resize", onResize);
+  onResize();
+  state.ready = true;
+  primaryBtn.disabled = false;
+  primaryBtn.textContent = "Deploy tank";
+  showOverlay("title");
+  requestAnimationFrame(frame);
+}
+
+function onResize() {
+  const wrap = canvas.parentElement;
+  const w = Math.max(1, wrap.clientWidth);
+  const h = Math.max(1, wrap.clientHeight);
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+function updateHud() {
+  scoreEl.textContent = String(state.score);
+  waveEl.textContent = String(state.wave);
+  hullEl.querySelectorAll(".pip").forEach((pip, i) => {
+    pip.classList.toggle("lost", i >= state.hull);
+  });
+}
+
+function showOverlay(kind) {
+  overlay.hidden = false;
+  overlay.dataset.screen = kind;
+  const panel = overlay.querySelector(".panel");
+  panel.style.animation = "none";
+  void panel.offsetWidth;
+  panel.style.animation = "";
+
+  if (kind === "title") {
+    panelKicker.textContent = "Desert breach";
+    panelTitle.textContent = "Iron Shell";
+    panelCopy.textContent =
+      "Drive the hull through the ruined outpost. Steer into the swarm and blast aliens before they reach you.";
+    primaryBtn.textContent = "Deploy tank";
+    panelHint.textContent = "W/S drive · A/D steer · mouse aim · click or Space fire";
+  } else if (kind === "wave") {
+    panelKicker.textContent = `Sector clear · best ${state.hi}`;
+    panelTitle.textContent = `Wave ${state.wave}`;
+    panelCopy.textContent = "Reload and roll out — denser swarm inbound.";
+    primaryBtn.textContent = "Continue";
+    panelHint.textContent = "Press Enter or tap Continue";
+  } else if (kind === "gameover") {
+    panelKicker.textContent = state.score >= state.hi ? "New high score" : "Hull breached";
+    panelTitle.textContent = "Game Over";
+    panelCopy.textContent = `Score ${state.score} · Wave ${state.wave} · Best ${state.hi}`;
+    primaryBtn.textContent = "Redeploy";
+    panelHint.textContent = "Press Enter or tap Redeploy";
+  }
+}
+
+function hideOverlay() {
+  overlay.hidden = true;
+}
+
+function clearWorldActors() {
+  for (const b of bullets) scene.remove(b.mesh);
+  bullets.length = 0;
+  for (const a of aliens) scene.remove(a.mesh);
+  aliens.length = 0;
+  for (const p of pickups) scene.remove(p.mesh);
+  pickups.length = 0;
+}
+
+function beginWave(n) {
+  state.wave = n;
+  state.waveQuota = 6 + n * 2;
+  state.aliensLeft = state.waveQuota;
+  state.aliensSpawned = 0;
+  state.spawnTimer = 1.2;
+  state.waveClearTimer = 0;
+  waveEl.textContent = String(n);
+}
+
+function resetRun() {
+  clearWorldActors();
+  state.score = 0;
+  state.wave = 1;
+  state.hull = MAX_HULL;
+  state.invuln = 0;
+  tank.position.set(0, 0, 0);
+  tank.userData.yaw = 0;
+  tank.userData.speed = 0;
+  tank.userData.cooldown = 0;
+  tank.rotation.y = 0;
+  turretPivot.rotation.set(0, 0, 0);
+  barrelMesh.rotation.set(0, 0, 0);
+  updateHud();
+  beginWave(1);
+}
+
+function startGame() {
+  if (!state.ready) return;
+  resetRun();
+  state.mode = "playing";
+  hideOverlay();
+  clock.getDelta();
+}
+
+function continueWave() {
+  beginWave(state.wave + 1);
+  state.mode = "playing";
+  hideOverlay();
+}
+
+function gameOver() {
+  state.mode = "gameover";
+  if (state.score > state.hi) {
+    state.hi = state.score;
+    localStorage.setItem(STORAGE_KEY, String(state.hi));
+  }
+  showOverlay("gameover");
+}
+
+function spawnAlien() {
+  const roll = Math.random();
+  let kind = "scout";
+  let tex = scoutTex;
+  let hp = 1;
+  let speed = 7 + state.wave * 0.6;
+  let score = 100;
+  let radius = 1.4;
+  if (state.wave >= 2 && roll > 0.55) {
+    kind = "brute";
+    tex = bruteTex;
+    hp = 3;
+    speed = 5 + state.wave * 0.4;
+    score = 250;
+    radius = 2.0;
+  } else if (state.wave >= 3 && roll > 0.78) {
+    kind = "razor";
+    tex = razorTex;
+    hp = 2;
+    speed = 10 + state.wave * 0.7;
+    score = 180;
+    radius = 1.2;
+  } else if (state.wave >= 4 && roll > 0.9) {
+    kind = "orb";
+    tex = orbTex;
+    hp = 2;
+    speed = 6.5 + state.wave * 0.5;
+    score = 200;
+    radius = 1.5;
   }
 
-  function resetRun() {
-    state.score = 0;
-    state.wave = 1;
-    state.hull = MAX_HULL;
-    state.invuln = 0;
-    state.shake = 0;
-    state.flash = 0;
-    state.bullets = [];
-    state.aliens = [];
-    state.particles = [];
-    state.blasts = [];
-    state.pickups = [];
-    state.tank = makeTank();
-    updateHud();
-    beginWave(1);
+  const ang = Math.random() * Math.PI * 2;
+  const dist = rand(38, 55);
+  const x = tank.position.x + Math.cos(ang) * dist;
+  const z = tank.position.z + Math.sin(ang) * dist;
+  const mesh = makeAlien(kind, tex);
+  placeOnGround(mesh, x, z);
+  scene.add(mesh);
+  aliens.push({ mesh, kind, hp, speed, score, radius, hitFlash: 0, bob: Math.random() * Math.PI * 2 });
+  state.aliensSpawned++;
+}
+
+function fire() {
+  const ud = tank.userData;
+  if (ud.cooldown > 0) return;
+  ud.cooldown = 0.22;
+
+  muzzle.getWorldPosition(tmpV);
+  // Barrel faces local -Z
+  tmpV2.set(0, 0, -1).applyQuaternion(barrelMesh.getWorldQuaternion(_q)).normalize();
+
+  const geo = new THREE.SphereGeometry(0.18, 8, 8);
+  const mat = new THREE.MeshBasicMaterial({ color: 0xffe08a });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(tmpV);
+  scene.add(mesh);
+
+  const flash = new THREE.PointLight(0xffaa55, 3, 12);
+  flash.position.copy(tmpV);
+  scene.add(flash);
+  setTimeout(() => scene.remove(flash), 60);
+
+  bullets.push({
+    mesh,
+    vel: tmpV2.clone().multiplyScalar(55),
+    life: 1.6,
+  });
+}
+
+function damageTank() {
+  if (state.invuln > 0) return;
+  state.hull--;
+  state.invuln = 1.5;
+  updateHud();
+  if (state.hull <= 0) gameOver();
+}
+
+function maybeDrop(pos) {
+  if (Math.random() > 0.14 || state.hull >= MAX_HULL) return;
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.55, 12, 12),
+    new THREE.MeshStandardMaterial({
+      color: 0x7dff9a,
+      emissive: 0x2a8a44,
+      emissiveIntensity: 0.8,
+    })
+  );
+  mesh.position.copy(pos);
+  mesh.position.y += 1;
+  scene.add(mesh);
+  pickups.push({ mesh, life: 10 });
+}
+
+function updateAim() {
+  raycaster.setFromCamera(state.pointerNdc, camera);
+  if (raycaster.ray.intersectPlane(groundPlane, aimPoint)) {
+    // Aim a bit above ground for nicer arcs
+    const from = muzzle.getWorldPosition(tmpV);
+    const dir = aimPoint.clone().sub(from);
+    // Keep aim mostly forward-ish relative to hull for playability
+    const local = dir.clone();
+    const yaw = Math.atan2(-local.x, -local.z);
+    // Smooth turret toward world yaw relative to tank
+    const desiredTurret = yaw - tank.userData.yaw;
+    let diff = desiredTurret - turretPivot.rotation.y;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    turretPivot.rotation.y += clamp(diff, -0.12, 0.12);
+
+    const flatDist = Math.hypot(dir.x, dir.z);
+    const pitch = -Math.atan2(dir.y + 1.2, flatDist);
+    barrelMesh.rotation.x = clamp(pitch, -0.45, 0.15);
   }
+}
 
-  function beginWave(n) {
-    state.wave = n;
-    state.waveQuota = 5 + n * 2;
-    state.aliensLeftInWave = state.waveQuota;
-    state.aliensSpawned = 0;
-    state.spawnTimer = 1.1;
-    state.waveClearTimer = 0;
-    waveEl.textContent = String(n);
+function collideBuildings(nx, nz, radius) {
+  for (const b of buildings) {
+    const dx = nx - b.position.x;
+    const dz = nz - b.position.z;
+    const min = radius + (b.userData.radius || 4);
+    if (dx * dx + dz * dz < min * min) return true;
   }
+  return false;
+}
 
-  function updateHud() {
-    scoreEl.textContent = String(state.score);
-    waveEl.textContent = String(state.wave);
-    hullEl.querySelectorAll(".pip").forEach((pip, i) => {
-      pip.classList.toggle("lost", i >= state.hull);
-    });
+function updatePlaying(dt) {
+  const ud = tank.userData;
+  let throttle = 0;
+  let steer = 0;
+  if (state.keys.w || state.keys.arrowup) throttle += 1;
+  if (state.keys.s || state.keys.arrowdown) throttle -= 1;
+  if (state.keys.a || state.keys.arrowleft) steer += 1;
+  if (state.keys.d || state.keys.arrowright) steer -= 1;
+
+  const targetSpeed = throttle * ud.maxSpeed;
+  ud.speed += (targetSpeed - ud.speed) * Math.min(1, ud.accel * dt * 0.08);
+  if (Math.abs(throttle) < 0.1) ud.speed *= 1 - Math.min(1, 3 * dt);
+
+  const turn = steer * ud.turnRate * (0.45 + Math.min(1, Math.abs(ud.speed) / ud.maxSpeed));
+  ud.yaw += turn * dt;
+  tank.rotation.y = ud.yaw;
+
+  const forwardX = -Math.sin(ud.yaw);
+  const forwardZ = -Math.cos(ud.yaw);
+  const nx = tank.position.x + forwardX * ud.speed * dt;
+  const nz = tank.position.z + forwardZ * ud.speed * dt;
+  const limited = clamp(Math.hypot(nx, nz), 0, WORLD * 0.48);
+  const ang = Math.atan2(nx, nz);
+  const fx = limited === 0 ? nx : Math.sin(ang) * limited;
+  const fz = limited === 0 ? nz : Math.cos(ang) * limited;
+
+  if (!collideBuildings(fx, fz, ud.radius)) {
+    tank.position.x = fx;
+    tank.position.z = fz;
+  } else {
+    ud.speed *= 0.3;
   }
+  tank.position.y = heightAt(tank.position.x, tank.position.z);
 
-  function showOverlay(kind) {
-    overlay.hidden = false;
-    overlay.dataset.screen = kind;
-    const panel = overlay.querySelector(".panel");
-    panel.style.animation = "none";
-    void panel.offsetWidth;
-    panel.style.animation = "";
+  // Subtle body pitch/roll from dunes
+  hullMesh.rotation.x = Math.sin(tank.position.x * 0.08 + tank.position.z * 0.05) * 0.04;
+  hullMesh.rotation.z = Math.cos(tank.position.z * 0.07) * 0.03;
 
-    if (kind === "title") {
-      panelKicker.textContent = "Desert breach";
-      panelTitle.textContent = "Iron Shell";
-      panelCopy.textContent =
-        "Hold the ruined outpost. Roll the hull across the sand and blast the swarm before it reaches the trench.";
-      primaryBtn.textContent = "Deploy tank";
-      panelHint.textContent =
-        "A / D or ← → move · Space or click fire · touch pads on mobile";
-    } else if (kind === "wave") {
-      panelKicker.textContent = `Outpost held · best ${state.hi}`;
-      panelTitle.textContent = `Wave ${state.wave}`;
-      panelCopy.textContent = "Dust settles. Reload — the next swarm is denser.";
-      primaryBtn.textContent = "Continue";
-      panelHint.textContent = "Press Enter or tap Continue";
-    } else if (kind === "gameover") {
-      panelKicker.textContent = state.score >= state.hi ? "New high score" : "Hull breached";
-      panelTitle.textContent = "Game Over";
-      panelCopy.textContent = `Score ${state.score} · Wave ${state.wave} · Best ${state.hi}`;
-      primaryBtn.textContent = "Redeploy";
-      panelHint.textContent = "Press Enter or tap Redeploy";
+  if (ud.cooldown > 0) ud.cooldown -= dt;
+  updateAim();
+  if (state.keys[" "] || state.pointerDown || state.keys.fire) fire();
+
+  if (state.invuln > 0) state.invuln = Math.max(0, state.invuln - dt);
+
+  // Spawn
+  if (state.aliensSpawned < state.waveQuota) {
+    state.spawnTimer -= dt;
+    if (state.spawnTimer <= 0) {
+      spawnAlien();
+      state.spawnTimer = Math.max(0.55, 1.4 - state.wave * 0.08);
     }
   }
 
-  function hideOverlay() {
-    overlay.hidden = true;
-  }
-
-  function startGame() {
-    if (!assetsReady) return;
-    resetRun();
-    state.mode = "playing";
-    hideOverlay();
-  }
-
-  function continueWave() {
-    beginWave(state.wave + 1);
-    state.mode = "playing";
-    hideOverlay();
-  }
-
-  function gameOver() {
-    state.mode = "gameover";
-    if (state.score > state.hi) {
-      state.hi = state.score;
-      localStorage.setItem(STORAGE_KEY, String(state.hi));
-    }
-    showOverlay("gameover");
-  }
-
-  function spawnAlien() {
-    const roll = Math.random();
-    let kindIndex = 0;
-    if (state.wave >= 2 && roll > 0.55) kindIndex = 1;
-    if (state.wave >= 3 && roll > 0.78) kindIndex = 2;
-    if (state.wave >= 4 && roll > 0.9) kindIndex = 3;
-    const kinds = [
-      {
-        kind: "scout",
-        img: "scout",
-        r: 22,
-        draw: 56,
-        hp: 1,
-        speed: 38 + state.wave * 4,
-        score: 100,
-        color: "#7dff9a",
-      },
-      {
-        kind: "brute",
-        img: "brute",
-        r: 30,
-        draw: 72,
-        hp: 3,
-        speed: 26 + state.wave * 3,
-        score: 250,
-        color: "#c8ff4d",
-      },
-      {
-        kind: "razor",
-        img: "razor",
-        r: 18,
-        draw: 48,
-        hp: 2,
-        speed: 58 + state.wave * 5,
-        score: 180,
-        color: "#ff5e4d",
-      },
-      {
-        kind: "orb",
-        img: "orb",
-        r: 24,
-        draw: 54,
-        hp: 2,
-        speed: 32 + state.wave * 3.5,
-        score: 200,
-        color: "#5ee7ff",
-      },
-    ];
-    const def = kinds[kindIndex];
-    state.aliens.push({
-      ...def,
-      x: rand(50, W - 50),
-      y: -40,
-      vx: rand(-30, 30),
-      phase: Math.random() * Math.PI * 2,
-      hitFlash: 0,
-      rot: rand(0, Math.PI * 2),
-    });
-    state.aliensSpawned++;
-  }
-
-  function fire() {
-    const tank = state.tank;
-    if (!tank || tank.cooldown > 0) return;
-    tank.cooldown = 0.16;
-    tank.recoil = 1;
-    const ang = tank.barrelAngle;
-    const muzzle = 48;
-    const bx = tank.x + Math.cos(ang) * muzzle;
-    const by = tank.y - 18 + Math.sin(ang) * muzzle;
-    state.bullets.push({
-      x: bx,
-      y: by,
-      vx: Math.cos(ang) * 640,
-      vy: Math.sin(ang) * 640,
-      life: 1.4,
-      r: 5,
-    });
-    burst(bx, by, "#ffd27a", 8, 90, 200);
-    burst(bx, by, "#fff4c8", 4, 40, 100);
-  }
-
-  function burst(x, y, color, n, minSp, maxSp) {
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const sp = rand(minSp, maxSp);
-      state.particles.push({
-        x,
-        y,
-        vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp,
-        life: rand(0.25, 0.75),
-        max: 0.75,
-        r: rand(1.5, 4.5),
-        color,
-      });
+  // Bullets
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    b.mesh.position.addScaledVector(b.vel, dt);
+    b.life -= dt;
+    if (b.life <= 0 || b.mesh.position.y < -2) {
+      scene.remove(b.mesh);
+      bullets.splice(i, 1);
     }
   }
 
-  function explode(x, y, color) {
-    state.blasts.push({ x, y, r: 4, max: 56, life: 1, color });
-    burst(x, y, color, 20, 70, 280);
-    burst(x, y, "#e8dfc8", 10, 40, 150);
-    burst(x, y, "#c4a574", 8, 30, 120);
-    state.shake = Math.max(state.shake, 0.35);
-  }
-
-  function damageTank() {
-    if (state.invuln > 0) return;
-    state.hull--;
-    state.invuln = 1.4;
-    state.flash = 0.35;
-    state.shake = 0.55;
-    updateHud();
-    burst(state.tank.x, state.tank.y, "#e85a3c", 16, 80, 220);
-    if (state.hull <= 0) gameOver();
-  }
-
-  function maybeDrop(x, y) {
-    if (Math.random() > 0.12 || state.hull >= MAX_HULL) return;
-    state.pickups.push({ x, y, vy: 50, kind: "repair", life: 8 });
-  }
-
-  function update(dt) {
-    state.t += dt;
-    if (state.shake > 0) state.shake = Math.max(0, state.shake - dt);
-    if (state.flash > 0) state.flash = Math.max(0, state.flash - dt);
-    if (state.invuln > 0) state.invuln = Math.max(0, state.invuln - dt);
-
-    state.dust.forEach((d) => {
-      d.x += d.vx * dt;
-      if (d.x > W + 10) {
-        d.x = -10;
-        d.y = rand(H * 0.55, H - 40);
-      }
-    });
-
-    if (state.mode !== "playing" || !state.tank) return;
-
-    const tank = state.tank;
-    let move = 0;
-    if (state.keys.a || state.keys.arrowleft) move -= 1;
-    if (state.keys.d || state.keys.arrowright) move += 1;
-    tank.x = clamp(tank.x + move * tank.speed * dt, 48, W - 48);
-    tank.tread += Math.abs(move) * dt * 10;
-    if (tank.cooldown > 0) tank.cooldown -= dt;
-    if (tank.recoil > 0) tank.recoil = Math.max(0, tank.recoil - dt * 4);
-
-    const aimDx = state.aimX - tank.x;
-    const aimDy = state.aimY - (tank.y - 18);
-    let ang = Math.atan2(aimDy, aimDx);
-    if (ang > 0) ang = aimDx >= 0 ? -0.15 : -Math.PI + 0.15;
-    tank.barrelAngle = clamp(ang, -Math.PI * 0.95, -Math.PI * 0.05);
-
-    if (state.keys[" "] || state.pointerDown || state.keys.fire) fire();
-
-    if (state.aliensSpawned < state.waveQuota) {
-      state.spawnTimer -= dt;
-      if (state.spawnTimer <= 0) {
-        spawnAlien();
-        state.spawnTimer = Math.max(0.45, 1.35 - state.wave * 0.07);
-      }
+  // Aliens
+  for (let i = aliens.length - 1; i >= 0; i--) {
+    const a = aliens[i];
+    a.bob += dt * 3;
+    const toTank = tmpV.copy(tank.position).sub(a.mesh.position);
+    toTank.y = 0;
+    const dist = toTank.length();
+    if (dist > 0.001) {
+      toTank.multiplyScalar(1 / dist);
+      a.mesh.position.x += toTank.x * a.speed * dt;
+      a.mesh.position.z += toTank.z * a.speed * dt;
     }
+    a.mesh.position.y = heightAt(a.mesh.position.x, a.mesh.position.z) + Math.sin(a.bob) * 0.25;
 
-    for (let i = state.bullets.length - 1; i >= 0; i--) {
-      const b = state.bullets[i];
-      b.x += b.vx * dt;
-      b.y += b.vy * dt;
-      b.life -= dt;
-      if (b.life <= 0 || b.y < -20 || b.x < -20 || b.x > W + 20) {
-        state.bullets.splice(i, 1);
-      }
-    }
-
-    for (let i = state.aliens.length - 1; i >= 0; i--) {
-      const a = state.aliens[i];
-      a.phase += dt * (a.kind === "razor" ? 6 : 2.5);
-      a.rot += dt * (a.kind === "razor" ? 3.5 : a.kind === "orb" ? 1.2 : 0.4);
-      a.x += a.vx * dt + Math.sin(a.phase) * (a.kind === "orb" ? 70 : 25) * dt;
-      a.y += a.speed * dt;
-      if (a.hitFlash > 0) a.hitFlash -= dt;
-      if (a.x < a.r) {
-        a.x = a.r;
-        a.vx = Math.abs(a.vx);
-      }
-      if (a.x > W - a.r) {
-        a.x = W - a.r;
-        a.vx = -Math.abs(a.vx);
-      }
-
-      for (let j = state.bullets.length - 1; j >= 0; j--) {
-        const b = state.bullets[j];
-        const dx = a.x - b.x;
-        const dy = a.y - b.y;
-        if (dx * dx + dy * dy < (a.r + b.r) * (a.r + b.r)) {
-          state.bullets.splice(j, 1);
-          a.hp -= 1;
-          a.hitFlash = 0.12;
-          burst(b.x, b.y, a.color, 5, 40, 120);
-          if (a.hp <= 0) {
-            explode(a.x, a.y, a.color);
-            state.score += a.score;
-            state.aliensLeftInWave--;
-            maybeDrop(a.x, a.y);
-            state.aliens.splice(i, 1);
-            updateHud();
-            break;
-          }
-        }
-      }
-
-      if (!state.aliens[i]) continue;
-
-      const tankHit =
-        Math.abs(a.x - tank.x) < tank.w * 0.38 + a.r &&
-        Math.abs(a.y - tank.y) < tank.h * 0.4 + a.r;
-      if (tankHit) {
-        explode(a.x, a.y, a.color);
-        state.aliensLeftInWave--;
-        state.aliens.splice(i, 1);
-        damageTank();
-        continue;
-      }
-      if (a.y > GROUND_Y - 10) {
-        explode(a.x, a.y, "#e85a3c");
-        state.aliensLeftInWave--;
-        state.aliens.splice(i, 1);
-        damageTank();
-      }
-    }
-
-    for (let i = state.pickups.length - 1; i >= 0; i--) {
-      const p = state.pickups[i];
-      p.y += p.vy * dt;
-      p.life -= dt;
-      if (Math.abs(p.x - tank.x) < 40 && Math.abs(p.y - tank.y) < 40) {
-        if (p.kind === "repair" && state.hull < MAX_HULL) {
-          state.hull++;
+    // Bullet hits
+    for (let j = bullets.length - 1; j >= 0; j--) {
+      const b = bullets[j];
+      const d = b.mesh.position.distanceTo(a.mesh.position.clone().setY(a.mesh.position.y + 1.2));
+      if (d < a.radius + 0.4) {
+        scene.remove(b.mesh);
+        bullets.splice(j, 1);
+        a.hp -= 1;
+        a.hitFlash = 0.12;
+        if (a.hp <= 0) {
+          state.score += a.score;
+          state.aliensLeft--;
+          maybeDrop(a.mesh.position.clone());
+          scene.remove(a.mesh);
+          aliens.splice(i, 1);
           updateHud();
-          burst(tank.x, tank.y, "#7dff9a", 12, 40, 160);
+          break;
         }
-        state.pickups.splice(i, 1);
-      } else if (p.life <= 0 || p.y > H + 20) {
-        state.pickups.splice(i, 1);
       }
     }
+    if (!aliens[i]) continue;
 
-    for (let i = state.particles.length - 1; i >= 0; i--) {
-      const p = state.particles[i];
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += 120 * dt;
-      p.life -= dt;
-      if (p.life <= 0) state.particles.splice(i, 1);
-    }
-    for (let i = state.blasts.length - 1; i >= 0; i--) {
-      const b = state.blasts[i];
-      b.life -= dt * 2.2;
-      b.r = b.max * (1 - b.life);
-      if (b.life <= 0) state.blasts.splice(i, 1);
+    if (a.hitFlash > 0) {
+      a.hitFlash -= dt;
+      a.mesh.children[0].material.opacity = 0.45;
+    } else {
+      a.mesh.children[0].material.opacity = 1;
     }
 
-    if (
-      state.aliensSpawned >= state.waveQuota &&
-      state.aliens.length === 0 &&
-      state.aliensLeftInWave <= 0
-    ) {
-      state.waveClearTimer += dt;
-      if (state.waveClearTimer > 0.85) {
-        state.mode = "wave";
-        if (state.score > state.hi) {
-          state.hi = state.score;
-          localStorage.setItem(STORAGE_KEY, String(state.hi));
-        }
-        showOverlay("wave");
+    const hitDist = a.mesh.position.distanceTo(tank.position);
+    if (hitDist < a.radius + ud.radius) {
+      scene.remove(a.mesh);
+      aliens.splice(i, 1);
+      state.aliensLeft--;
+      damageTank();
+    }
+  }
+
+  // Pickups
+  for (let i = pickups.length - 1; i >= 0; i--) {
+    const p = pickups[i];
+    p.life -= dt;
+    p.mesh.position.y = heightAt(p.mesh.position.x, p.mesh.position.z) + 1 + Math.sin(clock.elapsedTime * 5) * 0.2;
+    if (p.mesh.position.distanceTo(tank.position) < 3) {
+      if (state.hull < MAX_HULL) {
+        state.hull++;
+        updateHud();
       }
+      scene.remove(p.mesh);
+      pickups.splice(i, 1);
+    } else if (p.life <= 0) {
+      scene.remove(p.mesh);
+      pickups.splice(i, 1);
     }
   }
 
-  function drawDesertBackground() {
-    const parallax = state.tank ? (state.tank.x - W / 2) * 0.04 : 0;
-    const img = images.bg;
-    if (img) {
-      // Cover canvas while preserving a cinematic crop toward the skyline.
-      const scale = Math.max(W / img.width, (H * 0.92) / img.height) * 1.08;
-      const dw = img.width * scale;
-      const dh = img.height * scale;
-      const dx = (W - dw) / 2 - parallax;
-      const dy = H * 0.02 - dh * 0.08;
-      ctx.drawImage(img, dx, dy, dw, dh);
-    } else {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#1a1020");
-      g.addColorStop(0.45, "#c4783a");
-      g.addColorStop(1, "#8a6a3a");
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, W, H);
-    }
-
-    // Warm dusk wash so sprites sit in the same lighting world.
-    const wash = ctx.createLinearGradient(0, 0, 0, H);
-    wash.addColorStop(0, "rgba(40, 20, 50, 0.18)");
-    wash.addColorStop(0.45, "rgba(220, 120, 50, 0.08)");
-    wash.addColorStop(1, "rgba(90, 60, 30, 0.12)");
-    ctx.fillStyle = wash;
-    ctx.fillRect(0, 0, W, H);
-
-    // Heat shimmer ribbons over mid dunes / buildings.
-    state.heat.forEach((h) => {
-      const ox = Math.sin(state.t * h.sp + h.ph) * 10;
-      ctx.fillStyle = `rgba(255, 210, 150, ${h.a})`;
-      ctx.beginPath();
-      ctx.ellipse(h.x + ox, h.y, h.w, h.h, 0, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  }
-
-  function drawGround() {
-    const img = images.ground;
-    const groundH = 110;
-    const gy = H - groundH;
-    if (img) {
-      const scroll = state.tank ? state.tank.x * 0.15 : 0;
-      const scale = groundH / img.height;
-      const dw = img.width * scale;
-      let x = -((scroll % dw) + dw) % dw;
-      while (x < W + dw) {
-        ctx.drawImage(img, x, gy, dw, groundH);
-        x += dw;
+  if (
+    state.aliensSpawned >= state.waveQuota &&
+    aliens.length === 0 &&
+    state.aliensLeft <= 0
+  ) {
+    state.waveClearTimer += dt;
+    if (state.waveClearTimer > 0.9) {
+      state.mode = "wave";
+      if (state.score > state.hi) {
+        state.hi = state.score;
+        localStorage.setItem(STORAGE_KEY, String(state.hi));
       }
-    } else {
-      ctx.fillStyle = "#8a6b3d";
-      ctx.fillRect(0, gy, W, groundH);
+      showOverlay("wave");
     }
-
-    // Soft blend into desert midground.
-    const blend = ctx.createLinearGradient(0, gy - 30, 0, gy + 20);
-    blend.addColorStop(0, "rgba(12, 16, 14, 0)");
-    blend.addColorStop(1, "rgba(40, 28, 14, 0.35)");
-    ctx.fillStyle = blend;
-    ctx.fillRect(0, gy - 30, W, 50);
-
-    // Trench lip
-    ctx.fillStyle = "rgba(20, 14, 8, 0.75)";
-    ctx.fillRect(0, H - 22, W, 22);
-    ctx.fillStyle = "rgba(212, 168, 75, 0.35)";
-    ctx.fillRect(0, H - 24, W, 3);
-
-    // Wind dust over sand
-    state.dust.forEach((d) => {
-      ctx.fillStyle = `rgba(232, 210, 170, ${d.a})`;
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-      ctx.fill();
-    });
   }
+}
 
-  function drawTank(tank) {
-    const blink = state.invuln > 0 && Math.floor(state.t * 16) % 2 === 0;
-    if (blink) ctx.globalAlpha = 0.4;
+function updateCamera(dt) {
+  const ud = tank.userData;
+  const back = 11;
+  const height = 5.5;
+  const desired = tmpV.set(
+    tank.position.x + Math.sin(ud.yaw) * back,
+    tank.position.y + height,
+    tank.position.z + Math.cos(ud.yaw) * back
+  );
+  camPos.lerp(desired, 1 - Math.pow(0.001, dt));
+  camTarget.lerp(
+    tmpV2.set(tank.position.x, tank.position.y + 1.6, tank.position.z),
+    1 - Math.pow(0.0008, dt)
+  );
+  camera.position.copy(camPos);
+  camera.lookAt(camTarget);
 
-    ctx.save();
-    ctx.translate(tank.x, tank.y);
+  // Keep sun relative-ish for consistent lighting
+  sun.position.set(tank.position.x - 40, 35, tank.position.z + 20);
+  sun.target.position.copy(tank.position);
+  sun.target.updateMatrixWorld();
+}
 
-    // Contact shadow on sand
-    ctx.fillStyle = "rgba(20, 12, 6, 0.45)";
-    ctx.beginPath();
-    ctx.ellipse(0, 28, 48, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
+function frame() {
+  const dt = Math.min(0.033, clock.getDelta());
+  if (state.mode === "playing") updatePlaying(dt);
+  else if (tank) updateAim();
 
-    const img = images.tank;
-    if (img) {
-      const bob = Math.sin(tank.tread * 2) * 1.2;
-      const recoilNudge = tank.recoil * 3;
-      // Face "upfield" — sprite is front 3/4; flip lightly with movement intent.
-      const facing = state.aimX >= tank.x ? 1 : -1;
-      ctx.save();
-      ctx.scale(facing, 1);
-      ctx.translate(0, bob - recoilNudge);
-      const dw = tank.w * 1.35;
-      const dh = tank.h * 1.35;
-      ctx.drawImage(img, -dw / 2, -dh * 0.72, dw, dh);
-      ctx.restore();
-    } else {
-      ctx.fillStyle = "#6b7a55";
-      ctx.fillRect(-36, -20, 72, 36);
-    }
+  if (tank) updateCamera(dt);
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
 
-    // Muzzle flash when recoiling
-    if (tank.recoil > 0.4) {
-      ctx.save();
-      ctx.translate(0, -18);
-      ctx.rotate(tank.barrelAngle);
-      const glow = ctx.createRadialGradient(50, 0, 2, 50, 0, 28);
-      glow.addColorStop(0, "rgba(255, 240, 180, 0.95)");
-      glow.addColorStop(0.4, "rgba(255, 160, 60, 0.55)");
-      glow.addColorStop(1, "transparent");
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(50 - tank.recoil * 6, 0, 28, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    ctx.restore();
-    ctx.globalAlpha = 1;
-  }
-
-  function drawAlien(a) {
-    ctx.save();
-    ctx.translate(a.x, a.y);
-    const pulse = 1 + Math.sin(a.phase) * 0.05;
-    ctx.scale(pulse, pulse);
-    if (a.hitFlash > 0) ctx.globalAlpha = 0.55;
-
-    // Soft contact glow / shadow
-    ctx.fillStyle = "rgba(0,0,0,0.28)";
-    ctx.beginPath();
-    ctx.ellipse(0, a.draw * 0.38, a.draw * 0.35, a.draw * 0.1, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    const img = images[a.img];
-    if (img) {
-      ctx.rotate(a.kind === "razor" ? a.rot : Math.sin(a.phase) * 0.08);
-      const s = a.draw;
-      // Soft drop shadow under sprite
-      ctx.drawImage(img, -s / 2 + 3, -s / 2 + 5, s, s);
-      ctx.globalAlpha = 0.35;
-      ctx.globalCompositeOperation = "multiply";
-      ctx.drawImage(img, -s / 2 + 3, -s / 2 + 5, s, s);
-      ctx.globalCompositeOperation = "source-over";
-      ctx.globalAlpha = a.hitFlash > 0 ? 0.55 : 1;
-      ctx.drawImage(img, -s / 2, -s / 2, s, s);
-    } else {
-      ctx.fillStyle = a.color;
-      ctx.beginPath();
-      ctx.arc(0, 0, a.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.restore();
-    ctx.globalAlpha = 1;
-  }
-
-  function draw() {
-    ctx.save();
-    if (state.shake > 0) {
-      const m = state.shake * 10;
-      ctx.translate(rand(-m, m), rand(-m, m));
-    }
-
-    if (!assetsReady) {
-      ctx.fillStyle = "#1a120c";
-      ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = "#c4a574";
-      ctx.font = "600 18px IBM Plex Mono, monospace";
-      ctx.textAlign = "center";
-      ctx.fillText("Loading desert outpost…", W / 2, H / 2);
-      ctx.restore();
-      return;
-    }
-
-    drawDesertBackground();
-    drawGround();
-
-    state.pickups.forEach((p) => {
-      const bob = Math.sin(state.t * 6 + p.x) * 3;
-      ctx.fillStyle = "#7dff9a";
-      ctx.shadowColor = "#7dff9a";
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y + bob, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "#0c1410";
-      ctx.font = "700 12px IBM Plex Mono, monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("+", p.x, p.y + bob + 1);
-    });
-
-    state.bullets.forEach((b) => {
-      const trail = ctx.createLinearGradient(
-        b.x,
-        b.y,
-        b.x - b.vx * 0.03,
-        b.y - b.vy * 0.03
-      );
-      trail.addColorStop(0, "rgba(255, 220, 120, 0.9)");
-      trail.addColorStop(1, "transparent");
-      ctx.strokeStyle = trail;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(b.x, b.y);
-      ctx.lineTo(b.x - b.vx * 0.03, b.y - b.vy * 0.03);
-      ctx.stroke();
-
-      ctx.fillStyle = "#fff2bf";
-      ctx.shadowColor = "#ffaa33";
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    });
-
-    state.aliens.forEach(drawAlien);
-    if (state.tank) drawTank(state.tank);
-
-    state.blasts.forEach((b) => {
-      ctx.strokeStyle = b.color;
-      ctx.globalAlpha = Math.max(0, b.life);
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.stroke();
-      const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-      g.addColorStop(0, `rgba(255,180,80,${0.25 * b.life})`);
-      g.addColorStop(1, "transparent");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    });
-
-    state.particles.forEach((p) => {
-      ctx.globalAlpha = Math.max(0, p.life / p.max);
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    });
-
-    if (state.flash > 0) {
-      ctx.fillStyle = `rgba(232,90,60,${state.flash * 0.35})`;
-      ctx.fillRect(0, 0, W, H);
-    }
-
-    // Cinematic vignette
-    const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.78);
-    vig.addColorStop(0, "transparent");
-    vig.addColorStop(1, "rgba(18, 10, 6, 0.5)");
-    ctx.fillStyle = vig;
-    ctx.fillRect(0, 0, W, H);
-
-    ctx.restore();
-  }
-
-  let last = performance.now();
-  function frame(now) {
-    const dt = Math.min(0.033, (now - last) / 1000);
-    last = now;
-    update(dt);
-    draw();
-    requestAnimationFrame(frame);
-  }
-
-  function fitCanvas() {
-    const rect = canvas.parentElement.getBoundingClientRect();
-    const scale = Math.min(rect.width / W, rect.height / H);
-    canvas.style.width = Math.floor(W * scale) + "px";
-    canvas.style.height = Math.floor(H * scale) + "px";
-  }
-
-  function canvasPos(clientX, clientY) {
-    const r = canvas.getBoundingClientRect();
-    return {
-      x: ((clientX - r.left) / r.width) * W,
-      y: ((clientY - r.top) / r.height) * H,
-    };
-  }
-
-  window.addEventListener("keydown", (e) => {
-    const k = e.key.toLowerCase();
-    state.keys[k] = true;
-    if (k === " " || k === "arrowleft" || k === "arrowright") e.preventDefault();
-    if (k === "enter") {
-      if (state.mode === "title" || state.mode === "gameover") startGame();
-      else if (state.mode === "wave") continueWave();
-    }
-  });
-  window.addEventListener("keyup", (e) => {
-    state.keys[e.key.toLowerCase()] = false;
-  });
-
-  canvas.addEventListener("pointerdown", (e) => {
-    if (state.mode !== "playing") return;
-    const p = canvasPos(e.clientX, e.clientY);
-    state.aimX = p.x;
-    state.aimY = p.y;
-    state.pointerDown = true;
-    canvas.setPointerCapture(e.pointerId);
-    fire();
-  });
-  canvas.addEventListener("pointermove", (e) => {
-    const p = canvasPos(e.clientX, e.clientY);
-    state.aimX = p.x;
-    state.aimY = p.y;
-  });
-  canvas.addEventListener("pointerup", () => {
-    state.pointerDown = false;
-  });
-  canvas.addEventListener("pointercancel", () => {
-    state.pointerDown = false;
-  });
-
-  primaryBtn.addEventListener("click", () => {
+// Input
+window.addEventListener("keydown", (e) => {
+  const k = e.key.toLowerCase();
+  state.keys[k] = true;
+  if ([" ", "arrowleft", "arrowright", "arrowup", "arrowdown"].includes(k)) e.preventDefault();
+  if (k === "enter") {
     if (state.mode === "title" || state.mode === "gameover") startGame();
     else if (state.mode === "wave") continueWave();
-  });
+  }
+});
+window.addEventListener("keyup", (e) => {
+  state.keys[e.key.toLowerCase()] = false;
+});
 
-  document.querySelectorAll(".pad-btn[data-dir]").forEach((btn) => {
-    const dir = btn.dataset.dir;
-    const key = dir === "left" ? "arrowleft" : "arrowright";
-    const on = (e) => {
-      e.preventDefault();
-      state.keys[key] = true;
-      btn.classList.add("active");
-    };
-    const off = (e) => {
-      e.preventDefault();
-      state.keys[key] = false;
-      btn.classList.remove("active");
-    };
-    btn.addEventListener("pointerdown", on);
-    btn.addEventListener("pointerup", off);
-    btn.addEventListener("pointerleave", off);
-    btn.addEventListener("pointercancel", off);
-  });
+function setPointerFromEvent(e) {
+  const rect = canvas.getBoundingClientRect();
+  state.pointerNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  state.pointerNdc.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+}
 
-  const fireBtn = document.getElementById("fireBtn");
-  fireBtn.addEventListener("pointerdown", (e) => {
+canvas.addEventListener("pointerdown", (e) => {
+  if (state.mode !== "playing") return;
+  setPointerFromEvent(e);
+  state.pointerDown = true;
+  canvas.setPointerCapture(e.pointerId);
+  fire();
+});
+canvas.addEventListener("pointermove", setPointerFromEvent);
+canvas.addEventListener("pointerup", () => {
+  state.pointerDown = false;
+});
+canvas.addEventListener("pointercancel", () => {
+  state.pointerDown = false;
+});
+
+primaryBtn.addEventListener("click", () => {
+  if (state.mode === "title" || state.mode === "gameover") startGame();
+  else if (state.mode === "wave") continueWave();
+});
+
+document.querySelectorAll(".pad-btn[data-key]").forEach((btn) => {
+  const key = btn.dataset.key;
+  const on = (e) => {
     e.preventDefault();
-    state.keys.fire = true;
-    fireBtn.classList.add("active");
-    if (state.mode === "playing") fire();
-  });
-  const fireOff = (e) => {
-    e.preventDefault();
-    state.keys.fire = false;
-    fireBtn.classList.remove("active");
+    state.keys[key] = true;
+    btn.classList.add("active");
   };
-  fireBtn.addEventListener("pointerup", fireOff);
-  fireBtn.addEventListener("pointerleave", fireOff);
-  fireBtn.addEventListener("pointercancel", fireOff);
+  const off = (e) => {
+    e.preventDefault();
+    state.keys[key] = false;
+    btn.classList.remove("active");
+  };
+  btn.addEventListener("pointerdown", on);
+  btn.addEventListener("pointerup", off);
+  btn.addEventListener("pointerleave", off);
+  btn.addEventListener("pointercancel", off);
+});
 
-  window.addEventListener("resize", fitCanvas);
-  window.addEventListener("blur", () => {
-    state.keys = Object.create(null);
-    state.pointerDown = false;
-  });
+const fireBtn = document.getElementById("fireBtn");
+fireBtn.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  state.keys.fire = true;
+  fireBtn.classList.add("active");
+  if (state.mode === "playing") fire();
+});
+const fireOff = (e) => {
+  e.preventDefault();
+  state.keys.fire = false;
+  fireBtn.classList.remove("active");
+};
+fireBtn.addEventListener("pointerup", fireOff);
+fireBtn.addEventListener("pointerleave", fireOff);
+fireBtn.addEventListener("pointercancel", fireOff);
 
-  initAtmosphere();
-  state.tank = makeTank();
-  fitCanvas();
-  showOverlay("title");
-  updateHud();
-  primaryBtn.disabled = true;
-  primaryBtn.textContent = "Loading…";
+window.addEventListener("blur", () => {
+  state.keys = Object.create(null);
+  state.pointerDown = false;
+});
 
-  loadAssets()
-    .then(() => {
-      primaryBtn.disabled = false;
-      primaryBtn.textContent = "Deploy tank";
-      requestAnimationFrame(frame);
-    })
-    .catch((err) => {
-      console.error(err);
-      panelCopy.textContent = "Could not load desert assets. Check the assets folder and reload.";
-      primaryBtn.disabled = false;
-      primaryBtn.textContent = "Retry";
-      primaryBtn.onclick = () => location.reload();
-      requestAnimationFrame(frame);
-    });
-})();
+primaryBtn.disabled = true;
+primaryBtn.textContent = "Loading…";
+updateHud();
+init().catch((err) => {
+  console.error(err);
+  panelCopy.textContent = "Could not start the 3D outpost. Check the console and reload.";
+  primaryBtn.disabled = false;
+  primaryBtn.textContent = "Retry";
+  primaryBtn.onclick = () => location.reload();
+});
