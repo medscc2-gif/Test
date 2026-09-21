@@ -1,6 +1,6 @@
 # Iron Shell
 
-Browser game: drive a tank across a desert veldt and blast waves of invading aliens.
+Browser game: drive a photorealistic tank across a ruined desert outpost and blast waves of invading aliens.
 
 ## Play
 
@@ -31,8 +31,12 @@ Open `http://localhost:8080`.
 ## Layout
 
 ```
-index.html       UI shell + overlay
-css/styles.css   HUD and stage
-js/game.js       Canvas engine + gameplay
+index.html                 UI shell + overlay
+css/styles.css             HUD and stage
+js/game.js                 Canvas engine + gameplay
+assets/bg-desert-city.jpg  Photoreal desert + ruined buildings
+assets/ground-sand.jpg     Foreground sand strip
+assets/tank.png            Player tank sprite
+assets/alien-*.png         Alien sprites
 icons/favicon.svg
 ```
